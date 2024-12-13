@@ -1,54 +1,48 @@
-#pragma config(Sensor, S1,     sensorCentral,  sensorLightActive)
+#pragma config(Sensor, S1,     sensorEsquerdo, sensorLightActive)
+#pragma config(Sensor, S2,     sensorDireito,  sensorLightActive)
 #pragma config(Motor,  motorB,          MotorDireito,  tmotorNXT, PIDControl, driveRight, encoder)
 #pragma config(Motor,  motorC,          MotorEsquerdo, tmotorNXT, PIDControl, driveLeft, encoder)
 
-// Definicoes dos reflexoes, velocidade padrao e a mudanca para as curvas
-#define ReflexoLuz 15
-#define VelocidadeBase 90
-#define MudancaVel 40
+// Definições
+#define ReflexoLuz 30 
+#define VelocidadeBase 50
+#define MudancaVel 20
 
-task main(){
-	// Vari�vel para guardar a ultima direcao (1 = esquerda, -1 = direita, 0 = reto)
-	int ultimaDirecao = 0;
+task main() {
+    while (true) {
+        // Leituras dos sensores
+        int LeituraEsquerdo = SensorValue[sensorEsquerdo];
+        int LeituraDireito = SensorValue[sensorDireito];
 
-	while(true){
-		// Leitura do sensor central
-		int LeituraSensor = SensorValue[sensorCentral];
+        if (LeituraEsquerdo < ReflexoLuz && LeituraDireito < ReflexoLuz) {
+            // Ambos sensores na linha (segue reto)
+            motor[MotorEsquerdo] = VelocidadeBase;
+            motor[MotorDireito] = VelocidadeBase;
+            nxtDisplayCenteredTextLine(1, "Status: Reto");
 
-		// Condicao para os motores
-		if (LeituraSensor >= ReflexoLuz) {
-			// Linha detectada (segue reto)
-			motor[MotorEsquerdo] = VelocidadeBase;
-			motor[MotorDireito] = VelocidadeBase;
-			ultimaDirecao = 0; // Atualiza direcao para "reto"
+        } else if (LeituraEsquerdo < ReflexoLuz && LeituraDireito >= ReflexoLuz) {
+            // Linha à direita (gira para a direita)
+            motor[MotorEsquerdo] = VelocidadeBase + MudancaVel;
+            motor[MotorDireito] = -MudancaVel;
+            nxtDisplayCenteredTextLine(1, "Status: Direita");
 
-			// Exibir mensagem
-			nxtDisplayCenteredTextLine(1, "Status: Reto");
-			} else {
-			// Linha perdida (corrigir com base na ultima direcao)
-			if (ultimaDirecao <= 0) {
-				// Girar para direita (se estava reto ou virando para direita)
-				motor[MotorEsquerdo] = VelocidadeBase;
-				motor[MotorDireito] = -MudancaVel;
-				ultimaDirecao = -1; // Atualiza para direita
+        } else if (LeituraEsquerdo >= ReflexoLuz && LeituraDireito < ReflexoLuz) {
+            // Linha à esquerda (gira para a esquerda)
+            motor[MotorEsquerdo] = -MudancaVel;
+            motor[MotorDireito] = VelocidadeBase + MudancaVel;
+            nxtDisplayCenteredTextLine(1, "Status: Esquerda");
 
-				// Exibir mensagem
-				nxtDisplayCenteredTextLine(1, "Status: Direita");
-				} else {
-				// Girar � esquerda
-				motor[MotorEsquerdo] = -MudancaVel;
-				motor[MotorDireito] = VelocidadeBase;
-				ultimaDirecao = 1; // Atualiza para esquerda
+        } else {
+            // Nenhum sensor detecta a linha (girar sobre o eixo para procurar)
+            motor[MotorEsquerdo] = VelocidadeBase / 2;
+            motor[MotorDireito] = -VelocidadeBase / 2;
+            nxtDisplayCenteredTextLine(1, "Status: Perdido");
+        }
 
-				// Exibir mensagem
-				nxtDisplayCenteredTextLine(1, "Status: Esquerda");
-			}
-		}
+        nxtDisplayCenteredTextLine(2, "Esq: %d", LeituraEsquerdo);
+        nxtDisplayCenteredTextLine(3, "Dir: %d", LeituraDireito);
 
-		// Exibir a velocidade na tela
-		nxtDisplayCenteredTextLine(2, "Velocidade: %d", VelocidadeBase);
-
-		// Atraso para evitar sobrecarga
-		wait1Msec(25);
-	}
+        // Atraso para evitar sobrecarga
+        wait1Msec(50);
+    }
 }
